@@ -63,8 +63,8 @@ export class ApiKeyService {
   async getAllApiKeysForUser(userId: string) {
     return this.db
       .select({
-        id: apiKeyTable.userId,
-        value: apiKeyTable.userId,
+        id: apiKeyTable.id,
+        value: apiKeyTable.value,
         createdAt: apiKeyTable.createdAt,
         lastUsedAt: apiKeyTable.lastUsedAt,
         revokedAt: apiKeyTable.revokedAt,
