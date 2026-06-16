@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { LRUCache } from 'lru-cache';
-import { CacheKey } from '../common/types/CacheKey.type';
+import { CachedKey } from 'src/common/types/cached-key.type';
 
 export const LRU_CACHE = 'LRU_CACHE';
 
@@ -10,7 +10,7 @@ export const LRU_CACHE = 'LRU_CACHE';
     {
       provide: LRU_CACHE,
       useFactory: () => {
-        return new LRUCache<string, CacheKey>({
+        return new LRUCache<string, CachedKey>({
           ttl: 5 * 60 * 1000,
           max: 10_000,
           updateAgeOnGet: true,

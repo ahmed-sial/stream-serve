@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto';
 import Redis from 'ioredis';
 import { LAST_USED_HASH, VERSION } from '../common/types/constants';
 import { LRUCache } from 'lru-cache';
-import { CachedKey } from '../common/types/CachedKey';
+import { CachedKey } from '../common/types/cached-key.type';
 import { REDIS_CLIENT } from '../infrastructure/redis.module';
 
 const localCache = new LRUCache<string, CachedKey>({ max: 100_000 });
@@ -26,7 +26,7 @@ export class ApiKeyService {
   private generateKey(): { plaintextKey: string; keyId: string } {
     const keyId = crypto.randomUUID();
     const secretKey = randomBytes(32).toString('base64');
-    const plaintextKey = `srs_pub_${keyId.replace(/-/g, '')}_${secretKey}`;
+    const plaintextKey = `srs_${keyId.replace(/-/g, '')}_${secretKey}`;
     return { plaintextKey, keyId };
   }
   async createNewApiKey(userId: string) {
@@ -91,20 +91,23 @@ export class ApiKeyService {
       type: argon2.argon2id,
       timeCost: 3,
     });
+    // Invalidate old key caches before update
+    await this.redis.del(`srs_api_key:${VERSION}:${apiId}`);
+    localCache.delete(`${VERSION}:${apiId}`);
     // Add record in DB
     await this.db
       .update(apiKeyTable)
-      .set({ value: hashedKey, id: keyId }) // TODO: update other values upon regenerating API key
+      .set({ value: hashedKey, id: keyId })
       .where(and(eq(apiKeyTable.id, apiId), eq(apiKeyTable.userId, userId)));
     return { key: plaintextKey };
   }
 
-  async getApiKeyLastUsedTime(apiId: string) {
+  async getApiKeyLastUsedTime(apiId: string, userId: string) {
     const val = await this.redis.hget(LAST_USED_HASH, apiId);
     if (val) return new Date(Number(val));
     // If Redis-Miss then hit the DB to get the value
     const record = await this.db.query.apiKeyTable.findFirst({
-      where: (ak) => eq(ak.id, apiId),
+      where: (ak) => and(eq(ak.id, apiId), eq(ak.userId, userId)),
       columns: {
         lastUsedAt: true,
       },

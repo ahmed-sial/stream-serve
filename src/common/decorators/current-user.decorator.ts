@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { ApiKeyRequestUser } from '../types/ApiKeyRequestUser';
+import { ApiKeyRequestUser } from '../types/api-key-request-user.type';
 
 export const CurrentUser = createParamDecorator(
   (_: string, ctx: ExecutionContext) => {

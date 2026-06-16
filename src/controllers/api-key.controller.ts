@@ -3,13 +3,14 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiKeyService } from '../services/api-key.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import type { ApiKeyRequestUser } from '../common/types/ApiKeyRequestUser';
+import type { ApiKeyRequestUser } from '../common/types/api-key-request-user.type';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 
 @Controller('api-key')
@@ -34,7 +35,7 @@ export class ApiKeyController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete (revoke) API key' })
   deleteApiKey(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() { user }: ApiKeyRequestUser,
   ) {
     return this.service.deleteApiKey(id, user.id);
@@ -44,16 +45,16 @@ export class ApiKeyController {
   @ApiOperation({ summary: 'Get API key last used' })
   async fetchApiLastUsedTime(
     @CurrentUser() { user }: ApiKeyRequestUser,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.service.getApiKeyLastUsedTime(id);
+    return this.service.getApiKeyLastUsedTime(id, user.id);
   }
 
   @Post('r/:id')
   @ApiOperation({ summary: 'Regenerate API key' })
   regenerateApiKey(
     @CurrentUser() { user }: ApiKeyRequestUser,
-    @Param('id') apiId: string,
+    @Param('id', ParseUUIDPipe) apiId: string,
   ) {
     return this.service.regenerateApiKey(user.id, apiId);
   }

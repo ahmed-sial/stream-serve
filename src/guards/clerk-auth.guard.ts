@@ -24,9 +24,8 @@ import {
   REDIS_TTL,
   VERSION,
 } from '../common/types/constants';
-import { CachedKey } from '../common/types/CachedKey';
-
-const localCache = new LRUCache<string, CachedKey>({ max: 100_000 });
+import { CachedKey } from '../common/types/cached-key.type';
+import { LRU_CACHE } from 'src/infrastructure/lru-cache.module';
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
@@ -35,6 +34,8 @@ export class ClerkAuthGuard implements CanActivate {
     private readonly db: NeonHttpDatabase<typeof schema>,
     @Inject(REDIS_CLIENT)
     private readonly redis: Redis,
+    @Inject(LRU_CACHE)
+    private readonly localCache: LRUCache<string, CachedKey>,
   ) {}
 
   private async trackApiKeyLastUsed(keyId: string) {
@@ -53,7 +54,7 @@ export class ClerkAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<Request>();
-    const apiKey = request.headers['X-Api-Key'] as string;
+    const apiKey = request.headers['x-api-key'] as string;
     if (apiKey) {
       const apiKeyId = extractApiKeyId(apiKey);
       if (!apiKeyId)
@@ -62,7 +63,7 @@ export class ClerkAuthGuard implements CanActivate {
       const lruKey = `${VERSION}:${apiKeyId}`;
       try {
         // If the value is in local cache
-        const c = localCache.get(lruKey);
+        const c = this.localCache.get(lruKey);
         if (
           c &&
           c.expiresAt > Date.now() &&
@@ -81,7 +82,7 @@ export class ClerkAuthGuard implements CanActivate {
           throw new UnauthorizedException('Unauthorized');
 
         if (r?.userId) {
-          localCache.set(lruKey, {
+          this.localCache.set(lruKey, {
             userId: r.userId,
             apiKeyDigest: digestedApiKey,
             expiresAt: Date.now() + LRU_TTL,

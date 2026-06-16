@@ -19,9 +19,12 @@ export class ApiKeyLastUsedCron {
 
   @Cron('*/5 * * * *')
   async flushLastUsed() {
-    const map = await this.redis.hgetall(LAST_USED_HASH);
+    const tempKey = `${LAST_USED_HASH}:tmp:${Date.now()}`;
+    const renamed = await this.redis.rename(LAST_USED_HASH, tempKey);
+    if (!renamed) return; // Hash doesn't exist
+    const map = await this.redis.hgetall(tempKey);
     if (!map || Object.keys(map).length === 0) return;
-    await this.redis.del(LAST_USED_HASH);
+    // Defer deletion until after successful DB write
     const entries = Object.entries(map)
       .map(([keyId, ts]) => ({
         keyId,
@@ -36,7 +39,7 @@ export class ApiKeyLastUsedCron {
 
     if (entries.length === 0) return;
     const valuesSql = sql.join(
-      entries.map((e) => sql`${e.keyId}, ${e.ts}`),
+      entries.map((e) => sql`(${e.keyId}, ${e.ts})`),
       sql`,`,
     );
     await this.db.execute(sql`
@@ -45,5 +48,6 @@ export class ApiKeyLastUsedCron {
     FROM (VALUES ${valuesSql} AS v(id, ts))
     WHERE ak.id = v.id
 `);
+    await this.redis.del(tempKey);
   }
 }

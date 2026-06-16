@@ -7,6 +7,7 @@ import { LRUCacheModule } from './infrastructure/lru-cache.module';
 import { RedisModule } from './infrastructure/redis.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiKeyLastUsedCron } from './scheduler/api-key-last-used.cron';
+import { ApiKeyModule } from './modules/api-key.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ApiKeyLastUsedCron } from './scheduler/api-key-last-used.cron';
     DatabaseModule,
     LRUCacheModule,
     RedisModule,
+    ApiKeyModule,
   ],
   controllers: [AppController],
   providers: [AppService, ApiKeyLastUsedCron],
