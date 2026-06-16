@@ -3,6 +3,6 @@ export function extractApiKeyId(apiKey: string): string | null {
   const sections = apiKey.split('_');
   if (sections.length !== 3) return null;
   const keyId = sections[1];
-  if (!/^[a-f0-9]{32}$/i.test(apiKey)) return null;
+  if (!/^[a-f0-9]{32}$/i.test(keyId)) return null;
   return keyId;
 }
