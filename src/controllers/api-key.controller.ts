@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   UseGuards,
+  Version,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiKeyService } from '../services/api-key.service';
@@ -13,7 +14,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { ApiKeyRequestUser } from '../common/types/api-key-request-user.type';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 
-@Controller('api-key')
+@Controller({
+  path: 'api-key',
+  version: '1',
+})
 @UseGuards(ClerkAuthGuard)
 @ApiTags('API Keys')
 @ApiBearerAuth()

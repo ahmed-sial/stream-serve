@@ -78,7 +78,8 @@ export class ClerkAuthGuard implements CanActivate {
         }
         const redisKeyDigest = `srs:api_key:${VERSION}:${apiKeyId}`;
         const r = await this.redis.hgetall(redisKeyDigest);
-        if (r?.invalid === '1' || r?.apiKeyDigest !== digestedApiKey)
+        if (r?.invalid === '1') throw new UnauthorizedException('Unauthorized');
+        if (r?.apiKeyDigest && r?.apiKeyDigest !== digestedApiKey)
           throw new UnauthorizedException('Unauthorized');
 
         if (r?.userId) {

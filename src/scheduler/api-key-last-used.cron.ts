@@ -39,7 +39,7 @@ export class ApiKeyLastUsedCron {
 
     if (entries.length === 0) return;
     const valuesSql = sql.join(
-      entries.map((e) => sql`(${e.keyId}, ${e.ts})`),
+      entries.map((e) => sql`(${e.keyId}::uuid, ${e.ts})::timestamptz`),
       sql`,`,
     );
     await this.db.execute(sql`
