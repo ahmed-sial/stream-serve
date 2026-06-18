@@ -8,6 +8,13 @@
       "when": 1781513680737,
       "tag": "0000_pale_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781778257309,
+      "tag": "0001_blushing_sunfire",
+      "breakpoints": true
     }
   ]
 }
