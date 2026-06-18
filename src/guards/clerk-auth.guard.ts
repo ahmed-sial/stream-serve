@@ -20,6 +20,7 @@ import * as argon2 from 'argon2';
 import {
   LAST_USED_DEBOUNCED_SEC,
   LAST_USED_HASH,
+  LRU_TTL,
   REDIS_TTL,
   VERSION,
 } from '../common/types/constants';
@@ -85,7 +86,7 @@ export class ClerkAuthGuard implements CanActivate {
           this.localCache.set(lruKey, {
             userId: r.userId,
             apiKeyDigest: digestedApiKey,
-            expiresAt: Date.now() + REDIS_TTL,
+            expiresAt: Date.now() + LRU_TTL,
           });
           request.user = {
             id: r.userId,
