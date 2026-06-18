@@ -24,7 +24,7 @@ export class ApiKeyLastUsedCron {
     if (!renamed) return; // Hash doesn't exist
     const map = await this.redis.hgetall(tempKey);
     if (!map || Object.keys(map).length === 0) return;
-    // Defer deletion until after successful DB write
+    // Defer deletion until after successful DB writing
     const entries = Object.entries(map)
       .map(([keyId, ts]) => ({
         keyId,
@@ -39,7 +39,7 @@ export class ApiKeyLastUsedCron {
 
     if (entries.length === 0) return;
     const valuesSql = sql.join(
-      entries.map((e) => sql`(${e.keyId}, ${e.ts})`),
+      entries.map((e) => sql`(${e.keyId}::uuid, ${e.ts}::timestamptz)`),
       sql`,`,
     );
     await this.db.execute(sql`

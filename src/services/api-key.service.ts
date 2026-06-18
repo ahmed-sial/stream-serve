@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import * as schema from '../database/schema';
 import { DRIZZLE_DB } from '../database/database.module';
@@ -78,7 +83,7 @@ export class ApiKeyService {
       .update(apiKeyTable)
       .set({ revokedAt: new Date() })
       .where(and(eq(apiKeyTable.id, apiId), eq(apiKeyTable.userId, userId)));
-    await this.redis.del(`srs_api_key:${VERSION}:${apiId}`);
+    await this.redis.del(`srs:api_key:${VERSION}:${apiId}`);
     localCache.delete(`${VERSION}:${apiId}`);
   }
 
@@ -92,26 +97,34 @@ export class ApiKeyService {
       timeCost: 3,
     });
     // Invalidate old key caches before update
-    await this.redis.del(`srs_api_key:${VERSION}:${apiId}`);
+    await this.redis.del(`srs:api_key:${VERSION}:${apiId}`);
     localCache.delete(`${VERSION}:${apiId}`);
     // Add record in DB
-    await this.db
+    const updated = await this.db
       .update(apiKeyTable)
-      .set({ value: hashedKey, id: keyId })
-      .where(and(eq(apiKeyTable.id, apiId), eq(apiKeyTable.userId, userId)));
+      .set({ value: hashedKey, id: keyId, createdAt: new Date() })
+      .where(and(eq(apiKeyTable.id, apiId), eq(apiKeyTable.userId, userId)))
+      .returning({ id: apiKeyTable.id });
+    if (updated.length === 0) throw new NotFoundException('API key not found.');
     return { key: plaintextKey };
   }
 
   async getApiKeyLastUsedTime(apiId: string, userId: string) {
-    const val = await this.redis.hget(LAST_USED_HASH, apiId);
-    if (val) return new Date(Number(val));
-    // If Redis-Miss then hit the DB to get the value
+    const normalizedId = apiId.replace(/-/g, '');
+    const val = await this.redis.hget(LAST_USED_HASH, normalizedId);
+    if (val) {
+      const ts = Number(val);
+      if (Number.isFinite(ts)) {
+        return { lastUsedAt: new Date(ts) };
+      }
+    }
+    // If Redis-Miss, then hit the DB to get the value
     const record = await this.db.query.apiKeyTable.findFirst({
       where: (ak) => and(eq(ak.id, apiId), eq(ak.userId, userId)),
       columns: {
         lastUsedAt: true,
       },
     });
-    return record?.lastUsedAt ?? null;
+    return { lastUsedAt: record?.lastUsedAt ?? null };
   }
 }

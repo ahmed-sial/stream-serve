@@ -78,7 +78,8 @@ export class ClerkAuthGuard implements CanActivate {
         }
         const redisKeyDigest = `srs:api_key:${VERSION}:${apiKeyId}`;
         const r = await this.redis.hgetall(redisKeyDigest);
-        if (r?.invalid === '1' || r?.apiKeyDigest !== digestedApiKey)
+        if (r?.invalid === '1') throw new UnauthorizedException('Unauthorized');
+        if (r?.apiKeyDigest && r?.apiKeyDigest !== digestedApiKey)
           throw new UnauthorizedException('Unauthorized');
 
         if (r?.userId) {
@@ -107,11 +108,11 @@ export class ClerkAuthGuard implements CanActivate {
           throw new UnauthorizedException('Invalid API key provided.');
         const isValid = await argon2.verify(record.value, apiKey);
         if (!isValid) {
-          // If any new request comes from same API, it is blocked
+          // If any new request comes with same API, it is blocked
           await this.redis.hset(redisKeyDigest, {
             invalid: '1',
           });
-          await this.redis.expire(redisKeyDigest, REDIS_TTL); // TODO: Why setting the key to expire?
+          await this.redis.expire(redisKeyDigest, REDIS_TTL);
           throw new UnauthorizedException('Unauthorized');
         }
         await this.redis.hset(redisKeyDigest, {
@@ -131,7 +132,7 @@ export class ClerkAuthGuard implements CanActivate {
         throw new UnauthorizedException('Unauthorized');
       }
     } else {
-      // If there is no api key then it is a normal login by user with JWT token by clerk
+      // If there is no api key, then it is a normal login by user with JWT token by clerk
       const token = request.headers.authorization?.split(' ')[1];
       if (!token) throw new UnauthorizedException('Token missing in request.');
       try {
