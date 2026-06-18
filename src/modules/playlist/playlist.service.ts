@@ -48,6 +48,13 @@ export class PlaylistService {
     dto: UpdatePlaylistDto,
     userId: string,
   ) {
+    const hasUpdatableField =
+      dto.name !== undefined || dto.description !== undefined;
+    if (!hasUpdatableField) {
+      throw new BadRequestException(
+        'At least one field (name or description) must be provided.',
+      );
+    }
     const [updated] = await this.db
       .update(playlistTable)
       .set(dto)

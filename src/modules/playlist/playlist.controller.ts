@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -26,7 +27,10 @@ export class PlaylistController {
   constructor(private readonly service: PlaylistService) {}
   @Post()
   @ApiOperation({ summary: 'Create a playlist' })
-  createPlaylist(@CurrentUser() user: RequestUser, dto: CreatePlaylistDto) {
+  createPlaylist(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CreatePlaylistDto,
+  ) {
     return this.service.createPlaylist(dto, user.id);
   }
 
@@ -35,7 +39,7 @@ export class PlaylistController {
   updatePlaylist(
     @CurrentUser() user: RequestUser,
     @Param('id') playlistId: string,
-    dto: UpdatePlaylistDto,
+    @Body() dto: UpdatePlaylistDto,
   ) {
     return this.service.updatePlaylist(playlistId, dto, user.id);
   }
