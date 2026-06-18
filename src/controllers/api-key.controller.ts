@@ -6,13 +6,12 @@ import {
   ParseUUIDPipe,
   Post,
   UseGuards,
-  Version,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiKeyService } from '../services/api-key.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import type { ApiKeyRequestUser } from '../common/types/api-key-request-user.type';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
+import type { RequestUser } from '../common/types/request-user.type';
 
 @Controller({
   path: 'api-key',
@@ -26,13 +25,13 @@ export class ApiKeyController {
 
   @Post()
   @ApiOperation({ summary: 'Generate new API key' })
-  generateApiKey(@CurrentUser() { user }: ApiKeyRequestUser) {
+  generateApiKey(@CurrentUser() user: RequestUser) {
     return this.service.createNewApiKey(user.id);
   }
 
   @Get()
   @ApiOperation({ summary: 'Fetch all API keys' })
-  fetchApiKeys(@CurrentUser() { user }: ApiKeyRequestUser) {
+  fetchApiKeys(@CurrentUser() user: RequestUser) {
     return this.service.getAllApiKeysForUser(user.id);
   }
 
@@ -40,7 +39,7 @@ export class ApiKeyController {
   @ApiOperation({ summary: 'Delete (revoke) API key' })
   deleteApiKey(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() { user }: ApiKeyRequestUser,
+    @CurrentUser() user: RequestUser,
   ) {
     return this.service.deleteApiKey(id, user.id);
   }
@@ -48,7 +47,7 @@ export class ApiKeyController {
   @Get(':id')
   @ApiOperation({ summary: 'Get API key last used' })
   async fetchApiLastUsedTime(
-    @CurrentUser() { user }: ApiKeyRequestUser,
+    @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.service.getApiKeyLastUsedTime(id, user.id);
@@ -57,7 +56,7 @@ export class ApiKeyController {
   @Post('r/:id')
   @ApiOperation({ summary: 'Regenerate API key' })
   regenerateApiKey(
-    @CurrentUser() { user }: ApiKeyRequestUser,
+    @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) apiId: string,
   ) {
     return this.service.regenerateApiKey(user.id, apiId);

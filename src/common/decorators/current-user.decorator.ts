@@ -1,9 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { ApiKeyRequestUser } from '../types/api-key-request-user.type';
+import { RequestUser } from '../types/request-user.type';
+import { Request } from 'express';
 
 export const CurrentUser = createParamDecorator(
-  (_: string, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest<ApiKeyRequestUser>();
+  (_: string, ctx: ExecutionContext): RequestUser | undefined => {
+    const request = ctx.switchToHttp().getRequest<Request>();
     return request.user;
   },
 );
