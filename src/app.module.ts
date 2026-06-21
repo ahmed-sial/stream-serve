@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ApiKeyLastUsedCron } from './scheduler/api-key-last-used.cron';
 import { ApiKeyModule } from './modules/api-key.module';
 import { PlaylistModule } from './modules/playlist/playlist.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlaylistModule } from './modules/playlist/playlist.module';
     RedisModule,
     ApiKeyModule,
     PlaylistModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, ApiKeyLastUsedCron],
