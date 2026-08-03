@@ -6,10 +6,12 @@ import { Pool } from 'pg';
 dotenv.config();
 
 export function createDatabase() {
+  const connectionString = process.env.DB_URL;
+  if (!connectionString) throw new Error('DB_URL is required');
   return new Kysely<Database>({
     dialect: new PostgresDialect({
       pool: new Pool({
-        connectionString: process.env.DB_URL,
+        connectionString,
         max: 10,
       }),
     }),
