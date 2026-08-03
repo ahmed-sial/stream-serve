@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { createDatabase } from './database.factory';
+import { createDatabase } from 'src/database/database.factory';
 
 export const KYSELY_DB = 'KYSELY_DB';
 
