@@ -1,0 +1,6 @@
+import { ApiKeyTable } from './tables/api-key.table';
+
+export interface Database {
+  apiKey: ApiKeyTable;
+}
+// should selectable, insertable and updateable be added or not and what is their use
