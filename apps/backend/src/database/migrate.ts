@@ -2,9 +2,14 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import { FileMigrationProvider, Migrator } from 'kysely/migration';
 import { createDatabase } from './database.factory';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 async function migrateToLatest() {
-  const db = createDatabase();
+  const connectionString = process.env.DB_URL;
+  if (!connectionString) throw new Error('DB_URL is required');
+  const db = await createDatabase(connectionString);
 
   const migrator = new Migrator({
     db,
