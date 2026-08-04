@@ -3,9 +3,16 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './modules/database.module';
+import { LRUCacheModule } from './modules/lru-cache.module';
+import { RedisCacheModule } from './modules/redis-cache.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    LRUCacheModule,
+    RedisCacheModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
