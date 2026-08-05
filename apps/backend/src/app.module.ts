@@ -1,10 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DatabaseModule } from './modules/database.module';
 import { LRUCacheModule } from './modules/lru-cache.module';
 import { RedisCacheModule } from './modules/redis-cache.module';
+import { SuperTokensModule } from 'supertokens-nestjs';
+import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import Session from 'supertokens-node/recipe/session';
+import dotenv from 'dotenv';
+
+dotenv.config;
 
 @Module({
   imports: [
@@ -12,6 +18,23 @@ import { RedisCacheModule } from './modules/redis-cache.module';
     DatabaseModule,
     LRUCacheModule,
     RedisCacheModule,
+    SuperTokensModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        framework: 'express',
+        supertokens: {
+          connectionURI: configService.getOrThrow('SUPERTOKENS_CONNECTION_URI'),
+        },
+        appInfo: {
+          appName: 'StreamServe',
+          apiDomain: configService.getOrThrow('API_DOMAIN'),
+          websiteDomain: configService.getOrThrow('WEBSITE_DOMAIN'),
+          apiBasePath: '/auth',
+          websiteBasePath: '/auth',
+        },
+        recipeList: [EmailPassword.init(), Session.init()],
+      }),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
