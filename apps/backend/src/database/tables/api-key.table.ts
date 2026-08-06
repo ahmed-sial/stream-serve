@@ -7,6 +7,6 @@ export interface ApiKeyTable {
   name: string;
   hashedKey: string;
   createdAt: Generated<Date>;
-  lastUpdatedAt: Date | null;
+  lastUsedAt: Date | null;
   revokedAt: Date | null;
 }
