@@ -25,6 +25,7 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "argon2": "^0.45.1",
     "ioredis": "^6.0.0",
     "kysely": "^0.29.4",
     "lru-cache": "^11.5.2",
