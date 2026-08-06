@@ -9,6 +9,7 @@ import { SuperTokensModule } from 'supertokens-nestjs';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Session from 'supertokens-node/recipe/session';
 import dotenv from 'dotenv';
+import { ApiKeyModule } from './modules/api-key.module';
 
 dotenv.config;
 
@@ -35,6 +36,7 @@ dotenv.config;
         recipeList: [EmailPassword.init(), Session.init()],
       }),
     }),
+    ApiKeyModule,
   ],
   controllers: [AppController],
   providers: [AppService],
