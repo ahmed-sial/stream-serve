@@ -43,8 +43,8 @@ export class AuthGuard extends SuperTokensAuthGuard {
     const isSessionValid = await super.canActivate(context);
     const request = context.switchToHttp().getRequest();
     const apiKey = request.headers['X-Api-Key'] as string;
+    const session = request.session as SessionContainer;
     if (isApiKeySyntaxValid(apiKey)) {
-      const session = request.session as SessionContainer;
       const apiKeyId = extractApiKeyId(apiKey);
       const digestedApiKey = digestApiKey(apiKey);
       const lruKey = `${CACHE_KEY_VERSION}:${digestedApiKey}`;
@@ -74,16 +74,16 @@ export class AuthGuard extends SuperTokensAuthGuard {
           return true;
         }
         const apiKeyRecord = await this.db
-          .selectFrom('apiKey')
+          .selectFrom('api_keys')
           .where('id', '=', apiKeyId)
-          .where('revokedAt', '=', null)
-          .select(['hashedKey', 'userId', 'revokedAt'])
+          .where('revoked_at', '=', null)
+          .select(['hashed_key', 'user_id', 'revoked_at'])
           .executeTakeFirst();
 
         if (!apiKeyRecord) {
           throw new UnauthorizedException('Unauthorized');
         }
-        const isApiKeyValid = argon2.verify(apiKeyRecord.hashedKey, apiKey);
+        const isApiKeyValid = argon2.verify(apiKeyRecord.hashed_key, apiKey);
         if (!isApiKeyValid) {
           await this.redis.hset(redisKey, {
             invalid: '1',
@@ -92,11 +92,11 @@ export class AuthGuard extends SuperTokensAuthGuard {
           throw new UnauthorizedException('Unauthorized');
         }
         await this.redis.hset(redisKey, {
-          userId: apiKeyRecord.userId,
+          userId: apiKeyRecord.user_id,
         });
         await this.redis.expire(redisKey, REDIS_TTL);
         await session.mergeIntoAccessTokenPayload({
-          userId: apiKeyRecord.userId,
+          userId: apiKeyRecord.user_id,
           apiKeyId,
         });
         return true;
@@ -104,7 +104,12 @@ export class AuthGuard extends SuperTokensAuthGuard {
         this.logger.error(`Authorization error: ${err}`);
         throw new UnauthorizedException('Unauthorized');
       }
-    } else if (isSessionValid) return true;
+    } else if (isSessionValid) {
+      await session.mergeIntoAccessTokenPayload({
+        userId: session.getUserId(),
+      });
+      return true;
+    }
     return false;
   }
 }

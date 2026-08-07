@@ -18,9 +18,9 @@ export class ApiKeyService {
 
   async createApiKey(userId: string, apiKeyName: string) {
     const [result] = await this.db
-      .selectFrom('apiKey')
-      .where('userId', '=', userId)
-      .select(({ fn }) => [fn.count<number>('apiKey.id').as('api_count')])
+      .selectFrom('api_keys')
+      .where('user_id', '=', userId)
+      .select(({ fn }) => [fn.count<number>('id').as('api_count')])
       .execute();
 
     if (result.api_count >= 5)
@@ -37,13 +37,13 @@ export class ApiKeyService {
     });
     const prefix = plainTextKey.substring(0, 10) + '...';
     await this.db
-      .insertInto('apiKey')
+      .insertInto('api_keys')
       .values({
         id: keyId,
         prefix,
-        name: apiKeyName,
-        userId,
-        hashedKey,
+        api_name: apiKeyName,
+        user_id: userId,
+        hashed_key: hashedKey,
       })
       .executeTakeFirst();
     return { apiKey: plainTextKey };
@@ -51,9 +51,16 @@ export class ApiKeyService {
 
   async getAllApiKeys(userId: string) {
     const apiKeys = await this.db
-      .selectFrom('apiKey')
-      .where('userId', '=', userId)
-      .select(['id', 'name', 'prefix', 'createdAt', 'lastUsedAt', 'revokedAt'])
+      .selectFrom('api_keys')
+      .where('user_id', '=', userId)
+      .select([
+        'id',
+        'api_name',
+        'prefix',
+        'created_at',
+        'last_used_at',
+        'revoked_at',
+      ])
       .execute();
     return { apiKeys };
   }

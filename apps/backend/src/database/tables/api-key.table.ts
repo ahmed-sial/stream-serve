@@ -2,11 +2,11 @@ import { Generated } from 'kysely';
 
 export interface ApiKeyTable {
   id: Generated<string>;
-  userId: string;
+  user_id: string;
   prefix: string;
-  name: string;
-  hashedKey: string;
-  createdAt: Generated<Date>;
-  lastUsedAt: Date | null;
-  revokedAt: Date | null;
+  api_name: string;
+  hashed_key: string;
+  created_at: Generated<Date>;
+  last_used_at: Date | null;
+  revoked_at: Date | null;
 }
