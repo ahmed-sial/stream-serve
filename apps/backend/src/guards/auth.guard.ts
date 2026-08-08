@@ -46,6 +46,7 @@ export class AuthGuard extends SuperTokensAuthGuard {
     let isSessionValid = false;
     try {
       isSessionValid = await super.canActivate(context);
+      if (isSessionValid) return true;
     } catch (err) {
       const request = context.switchToHttp().getRequest<SessionRequest>();
       const response = context.switchToHttp().getResponse();

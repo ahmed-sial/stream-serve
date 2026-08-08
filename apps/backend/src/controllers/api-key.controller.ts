@@ -19,7 +19,8 @@ export class ApiKeyController {
 
   @Get()
   async getAllApiKeys(@Session() session: SessionContainer) {
-    const userId = session.getAccessTokenPayload()['userId'];
+    let userId = session.getAccessTokenPayload()['userId'];
+    if (!userId) userId = session.getUserId();
     return this.apiKeyService.getAllApiKeys(userId);
   }
 }
