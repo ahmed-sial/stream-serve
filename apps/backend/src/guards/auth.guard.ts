@@ -22,16 +22,12 @@ import { Kysely } from 'kysely';
 import { SessionRequest } from 'supertokens-node/framework/express';
 import Session from 'supertokens-node/recipe/session';
 import { RecipeUserId } from 'supertokens-node';
-
-interface CachedKey {
-  userId: string;
-  expiresAt: number;
-}
+import { LRU_CACHE } from 'src/modules/lru-cache.module';
+import { CacheType } from 'src/types/cache.type';
 
 const CACHE_KEY_VERSION = 'v1';
 const LRU_TTL = 5 * 60 * 1000;
 const REDIS_TTL = 10 * 60;
-const lruCache = new LRUCache<string, CachedKey>({ max: 10000 });
 
 @Injectable()
 export class AuthGuard extends SuperTokensAuthGuard {
@@ -39,6 +35,7 @@ export class AuthGuard extends SuperTokensAuthGuard {
   constructor(
     @Inject(KYSELY_DB) private db: Kysely<Database>,
     @Inject(REDIS_CACHE) private redis: Redis,
+    @Inject(LRU_CACHE) private lruCache: LRUCache<string, CacheType>,
   ) {
     super();
   }
@@ -63,7 +60,7 @@ export class AuthGuard extends SuperTokensAuthGuard {
         const lruKey = `${CACHE_KEY_VERSION}:${digestedApiKey}`;
         const now = Date.now();
         try {
-          const lruCacheValue = lruCache.get(lruKey);
+          const lruCacheValue = this.lruCache.get(lruKey);
           if (lruCacheValue && lruCacheValue.expiresAt > now) {
             await session.mergeIntoAccessTokenPayload({
               userId: lruCacheValue.userId,
@@ -77,7 +74,7 @@ export class AuthGuard extends SuperTokensAuthGuard {
           if (redisCacheValue?.invalid === '1')
             throw new UnauthorizedException('Unauthorized');
           if (redisCacheValue?.userId) {
-            lruCache.set(lruKey, {
+            this.lruCache.set(lruKey, {
               userId: redisCacheValue.userId,
               expiresAt: Date.now() + LRU_TTL,
             });
@@ -94,7 +91,6 @@ export class AuthGuard extends SuperTokensAuthGuard {
             .where('revoked_at', 'is', null)
             .select(['hashed_key', 'user_id', 'revoked_at'])
             .executeTakeFirst();
-          // Retrived api key is not set in lru cache
           if (!apiKeyRecord) {
             throw new UnauthorizedException('Unauthorized');
           }
@@ -113,6 +109,10 @@ export class AuthGuard extends SuperTokensAuthGuard {
             userId: apiKeyRecord.user_id,
           });
           await this.redis.expire(redisKey, REDIS_TTL);
+          this.lruCache.set(lruKey, {
+            userId: apiKeyRecord.user_id,
+            expiresAt: Date.now() + LRU_TTL,
+          });
           await session.mergeIntoAccessTokenPayload({
             userId: apiKeyRecord.user_id,
             apiKeyId,
