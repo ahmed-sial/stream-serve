@@ -12,11 +12,12 @@ export const isApiKeySyntaxValid = (apiKey: string): boolean => {
     apiParts.length != 3 ||
     apiParts[0] !== 'srs' ||
     apiParts[1].length !== 32 ||
-    apiParts[2].length !== 32 ||
+    apiParts[2].length !== 43 ||
     !/^[a-f0-9]{32}$/i.test(apiParts[1]) ||
-    !/^[a-f0-9]{32}$/i.test(apiParts[2])
-  )
+    !/^[a-zA-Z0-9]{43}$/i.test(apiParts[2])
+  ) {
     return false;
+  }
   return true;
 };
 
@@ -31,3 +32,19 @@ export const digestApiKey = (apiKey: string): string => {
     .update(apiKey)
     .digest('hex');
 };
+
+export function addUuidDashes(uuid: string): string {
+  const cleanUuid = uuid.replace(/-/g, '');
+
+  if (!/^[0-9a-fA-F]{32}$/.test(cleanUuid)) {
+    throw new Error('Invalid UUID');
+  }
+
+  return [
+    cleanUuid.slice(0, 8),
+    cleanUuid.slice(8, 12),
+    cleanUuid.slice(12, 16),
+    cleanUuid.slice(16, 20),
+    cleanUuid.slice(20, 32),
+  ].join('-');
+}

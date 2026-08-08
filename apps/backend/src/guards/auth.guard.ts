@@ -7,18 +7,21 @@ import {
 } from '@nestjs/common';
 import { SuperTokensAuthGuard } from 'supertokens-nestjs';
 import {
+  addUuidDashes,
   digestApiKey,
   extractApiKeyId,
   isApiKeySyntaxValid,
 } from 'src/utils/api-key.utils';
 import * as argon2 from 'argon2';
 import { LRUCache } from 'lru-cache';
-import { SessionContainer } from 'supertokens-node/recipe/session';
 import { REDIS_CACHE } from 'src/modules/redis-cache.module';
 import Redis from 'ioredis';
 import { KYSELY_DB } from 'src/modules/database.module';
 import { Database } from 'src/database/database.interface';
 import { Kysely } from 'kysely';
+import { SessionRequest } from 'supertokens-node/framework/express';
+import Session from 'supertokens-node/recipe/session';
+import { RecipeUserId } from 'supertokens-node';
 
 interface CachedKey {
   userId: string;
@@ -40,75 +43,93 @@ export class AuthGuard extends SuperTokensAuthGuard {
     super();
   }
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isSessionValid = await super.canActivate(context);
-    const request = context.switchToHttp().getRequest();
-    const apiKey = request.headers['X-Api-Key'] as string;
-    const session = request.session as SessionContainer;
-    if (isApiKeySyntaxValid(apiKey)) {
-      const apiKeyId = extractApiKeyId(apiKey);
-      const digestedApiKey = digestApiKey(apiKey);
-      const lruKey = `${CACHE_KEY_VERSION}:${digestedApiKey}`;
-      const now = Date.now();
-      try {
-        const lruCacheValue = lruCache.get(lruKey);
-        if (lruCacheValue && lruCacheValue.expiresAt > now) {
-          await session.mergeIntoAccessTokenPayload({
-            userId: lruCacheValue.userId,
-            apiKeyId,
-          });
-          return true;
-        }
-        const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${digestedApiKey}`;
-        const redisCacheValue = await this.redis.hgetall(redisKey);
-        if (redisCacheValue?.invalid === '1')
-          throw new UnauthorizedException('Unauthorized');
-        if (redisCacheValue?.userId) {
-          lruCache.set(lruKey, {
-            userId: redisCacheValue.userId,
-            expiresAt: Date.now() + LRU_TTL,
-          });
-          await session.mergeIntoAccessTokenPayload({
-            userId: redisCacheValue.userId,
-            apiKeyId,
-          });
-          return true;
-        }
-        const apiKeyRecord = await this.db
-          .selectFrom('api_keys')
-          .where('id', '=', apiKeyId)
-          .where('revoked_at', '=', null)
-          .select(['hashed_key', 'user_id', 'revoked_at'])
-          .executeTakeFirst();
-
-        if (!apiKeyRecord) {
-          throw new UnauthorizedException('Unauthorized');
-        }
-        const isApiKeyValid = argon2.verify(apiKeyRecord.hashed_key, apiKey);
-        if (!isApiKeyValid) {
+    let isSessionValid = false;
+    try {
+      isSessionValid = await super.canActivate(context);
+    } catch (err) {
+      const request = context.switchToHttp().getRequest<SessionRequest>();
+      const response = context.switchToHttp().getResponse();
+      const apiKey = request.headers['x-api-key'] as string;
+      const session = await Session.createNewSession(
+        request,
+        response,
+        '',
+        new RecipeUserId(''),
+      );
+      if (isApiKeySyntaxValid(apiKey)) {
+        const apiKeyId = addUuidDashes(extractApiKeyId(apiKey));
+        const digestedApiKey = digestApiKey(apiKey);
+        const lruKey = `${CACHE_KEY_VERSION}:${digestedApiKey}`;
+        const now = Date.now();
+        try {
+          const lruCacheValue = lruCache.get(lruKey);
+          if (lruCacheValue && lruCacheValue.expiresAt > now) {
+            await session.mergeIntoAccessTokenPayload({
+              userId: lruCacheValue.userId,
+              apiKeyId,
+            });
+            request.session = session;
+            return true;
+          }
+          const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${digestedApiKey}`;
+          const redisCacheValue = await this.redis.hgetall(redisKey);
+          if (redisCacheValue?.invalid === '1')
+            throw new UnauthorizedException('Unauthorized');
+          if (redisCacheValue?.userId) {
+            lruCache.set(lruKey, {
+              userId: redisCacheValue.userId,
+              expiresAt: Date.now() + LRU_TTL,
+            });
+            await session.mergeIntoAccessTokenPayload({
+              userId: redisCacheValue.userId,
+              apiKeyId,
+            });
+            request.session = session;
+            return true;
+          }
+          const apiKeyRecord = await this.db
+            .selectFrom('api_keys')
+            .where('id', '=', apiKeyId)
+            .where('revoked_at', 'is', null)
+            .select(['hashed_key', 'user_id', 'revoked_at'])
+            .executeTakeFirst();
+          // Retrived api key is not set in lru cache
+          if (!apiKeyRecord) {
+            throw new UnauthorizedException('Unauthorized');
+          }
+          const isApiKeyValid = await argon2.verify(
+            apiKeyRecord.hashed_key,
+            apiKey,
+          );
+          if (!isApiKeyValid) {
+            await this.redis.hset(redisKey, {
+              invalid: '1',
+            });
+            await this.redis.expire(redisKey, REDIS_TTL);
+            throw new UnauthorizedException('Unauthorized');
+          }
           await this.redis.hset(redisKey, {
-            invalid: '1',
+            userId: apiKeyRecord.user_id,
           });
           await this.redis.expire(redisKey, REDIS_TTL);
+          await session.mergeIntoAccessTokenPayload({
+            userId: apiKeyRecord.user_id,
+            apiKeyId,
+          });
+          request.session = session;
+          return true;
+        } catch (err) {
+          this.logger.error(`Authorization error: ${err}`);
           throw new UnauthorizedException('Unauthorized');
         }
-        await this.redis.hset(redisKey, {
-          userId: apiKeyRecord.user_id,
-        });
-        await this.redis.expire(redisKey, REDIS_TTL);
+      } else if (isSessionValid) {
         await session.mergeIntoAccessTokenPayload({
-          userId: apiKeyRecord.user_id,
-          apiKeyId,
+          userId: session.getUserId(),
         });
+        request.session = session;
         return true;
-      } catch (err) {
-        this.logger.error(`Authorization error: ${err}`);
-        throw new UnauthorizedException('Unauthorized');
       }
-    } else if (isSessionValid) {
-      await session.mergeIntoAccessTokenPayload({
-        userId: session.getUserId(),
-      });
-      return true;
+      throw err;
     }
     return false;
   }

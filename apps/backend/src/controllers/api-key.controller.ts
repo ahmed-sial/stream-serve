@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { ApiKeyService } from 'src/services/api-key.service';
-import { Session } from 'supertokens-nestjs';
+import { Session, VerifySession } from 'supertokens-nestjs';
 import type { SessionContainer } from 'supertokens-node/recipe/session';
 
 @Controller('api-key')
@@ -19,6 +19,7 @@ export class ApiKeyController {
 
   @Get()
   async getAllApiKeys(@Session() session: SessionContainer) {
-    return this.apiKeyService.getAllApiKeys(session.getUserId());
+    const userId = session.getAccessTokenPayload()['userId'];
+    return this.apiKeyService.getAllApiKeys(userId);
   }
 }
