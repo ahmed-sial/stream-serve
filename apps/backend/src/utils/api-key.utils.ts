@@ -14,7 +14,7 @@ export const isApiKeySyntaxValid = (apiKey: string): boolean => {
     apiParts[1].length !== 32 ||
     apiParts[2].length !== 43 ||
     !/^[a-f0-9]{32}$/i.test(apiParts[1]) ||
-    !/^[a-zA-Z0-9]{43}$/i.test(apiParts[2])
+    !/^[a-zA-Z0-9_-]{43}$/i.test(apiParts[2])
   ) {
     return false;
   }

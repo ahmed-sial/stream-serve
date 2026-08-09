@@ -1,6 +1,4 @@
-export interface CacheType {
+export interface ICacheType {
   userId: string;
-  apiKeyId?: string;
-  apiKeyLastUsedAt?: string;
-  expiresAt?: number;
+  expiresAt: number;
 }
