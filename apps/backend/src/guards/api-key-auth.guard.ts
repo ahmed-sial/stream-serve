@@ -23,9 +23,12 @@ import { LRU_CACHE } from 'src/modules/lru-cache.module';
 import { ICacheType } from 'src/types/cache.type';
 import type { Request } from 'express';
 
-const CACHE_KEY_VERSION = 'v1';
-const LRU_TTL = 5 * 60 * 1000;
-const REDIS_TTL = 10 * 60;
+export const CACHE_KEY_VERSION = 'v1';
+export const LRU_TTL = 5 * 60 * 1000;
+export const REDIS_TTL = 10 * 60;
+
+const LAST_USED_DEBOUNCE_SEC = 60;
+const LAST_USED_HASH_KEY = `srs:api_key:last_used:${CACHE_KEY_VERSION}`;
 
 @Injectable()
 export class ApiKeyAuthGuard implements CanActivate {
@@ -37,6 +40,26 @@ export class ApiKeyAuthGuard implements CanActivate {
     @Inject(REDIS_CACHE) private redis: Redis,
     @Inject(LRU_CACHE) private lruCache: LRUCache<string, ICacheType>,
   ) {}
+
+  // Sets lock for API key lastUsedAt with debounce rate of 60s.
+  // If the API is hit with in 60s, the lastUsedAt property will
+  // not be updated in redis, otherwise it is updated.
+  private async trackApiKeyLastUsedAt(apiKeyId: string) {
+    const lockKey = `srs:api_key:last_used_at_lock:${CACHE_KEY_VERSION}:${apiKeyId}`;
+    const isOk = await this.redis.set(
+      lockKey,
+      '1',
+      'EX',
+      LAST_USED_DEBOUNCE_SEC,
+      'NX',
+    );
+    if (!isOk) return;
+    await this.redis.hset(LAST_USED_HASH_KEY, {
+      apiKeyId,
+      lastUsedAt: Date.now().toString(),
+    });
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const apiKey = request.headers['x-api-key'] as string;
@@ -53,6 +76,14 @@ export class ApiKeyAuthGuard implements CanActivate {
           lruCacheValue.digestedApiKey === digestedApiKey
         ) {
           request.apiKey = { userId: lruCacheValue.userId, apiKeyId };
+          // await keyword is not used here,
+          // because it is a guard not an API endpoint, so we should
+          // never wait for API key lastUsedAt property to be updated first
+          // and then run remaing logic. We are not doing it async rather
+          // we are doing it in background.
+          // Simple it means call this async function but we don't care about its
+          // promise
+          void this.trackApiKeyLastUsedAt(apiKeyId);
           return true;
         }
         const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${apiKeyId}`;
@@ -69,6 +100,7 @@ export class ApiKeyAuthGuard implements CanActivate {
             digestedApiKey,
           });
           request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
+          void this.trackApiKeyLastUsedAt(apiKeyId);
           return true;
         }
         const apiKeyRecord = await this.db
@@ -102,6 +134,7 @@ export class ApiKeyAuthGuard implements CanActivate {
           digestedApiKey,
         });
         request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
+        void this.trackApiKeyLastUsedAt(apiKeyId);
         return true;
       } catch (err) {
         this.logger.error(`Authorization error: ${err}`);

@@ -4,7 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { privateDecrypt, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import { Kysely } from 'kysely';
 import { Database } from 'src/database/database.interface';
 import { KYSELY_DB } from 'src/modules/database.module';
@@ -14,7 +14,7 @@ import { LRUCache } from 'lru-cache';
 import { ICacheType } from 'src/types/cache.type';
 import { REDIS_CACHE } from 'src/modules/redis-cache.module';
 import Redis from 'ioredis';
-import { assertThatBodyParserHasBeenUsedForExpressLikeRequest } from 'supertokens-node/lib/build/framework/utils';
+import { CACHE_KEY_VERSION } from 'src/guards/api-key-auth.guard';
 
 @Injectable()
 export class ApiKeyService {
@@ -104,6 +104,9 @@ export class ApiKeyService {
         'Unable to delete API key. Try again later',
       );
     }
-    // invalidate the api key from lru and redis
+    const lruKey = `${CACHE_KEY_VERSION}:${apiKeyId}`;
+    this.lruCache.delete(lruKey);
+    const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${apiKeyId}`;
+    await this.redis.del(redisKey);
   }
 }
