@@ -43,22 +43,30 @@ export class ApiKeyAuthGuard implements CanActivate {
     if (isApiKeySyntaxValid(apiKey)) {
       const apiKeyId = addUuidDashes(extractApiKeyId(apiKey));
       const digestedApiKey = digestApiKey(apiKey);
-      const lruKey = `${CACHE_KEY_VERSION}:${digestedApiKey}`;
+      const lruKey = `${CACHE_KEY_VERSION}:${apiKeyId}`;
       const now = Date.now();
       try {
         const lruCacheValue = this.lruCache.get(lruKey);
-        if (lruCacheValue && lruCacheValue.expiresAt > now) {
+        if (
+          lruCacheValue &&
+          lruCacheValue.expiresAt > now &&
+          lruCacheValue.digestedApiKey === digestedApiKey
+        ) {
           request.apiKey = { userId: lruCacheValue.userId, apiKeyId };
           return true;
         }
-        const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${digestedApiKey}`;
+        const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${apiKeyId}`;
         const redisCacheValue = await this.redis.hgetall(redisKey);
-        if (redisCacheValue?.invalid === '1')
+        if (
+          redisCacheValue?.invalid === '1' ||
+          redisCacheValue?.digestedApiKey !== digestedApiKey
+        )
           throw new UnauthorizedException('Unauthorized');
         if (redisCacheValue?.userId) {
           this.lruCache.set(lruKey, {
             userId: redisCacheValue.userId,
             expiresAt: Date.now() + LRU_TTL,
+            digestedApiKey,
           });
           request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
           return true;
@@ -85,11 +93,13 @@ export class ApiKeyAuthGuard implements CanActivate {
         }
         await this.redis.hset(redisKey, {
           userId: apiKeyRecord.user_id,
+          digestedApiKey,
         });
         await this.redis.expire(redisKey, REDIS_TTL);
         this.lruCache.set(lruKey, {
           userId: apiKeyRecord.user_id,
           expiresAt: Date.now() + LRU_TTL,
+          digestedApiKey,
         });
         request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
         return true;
