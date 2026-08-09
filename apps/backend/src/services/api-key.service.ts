@@ -1,13 +1,28 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { privateDecrypt, randomBytes } from 'crypto';
 import { Kysely } from 'kysely';
 import { Database } from 'src/database/database.interface';
 import { KYSELY_DB } from 'src/modules/database.module';
 import * as argon2 from 'argon2';
+import { LRU_CACHE } from 'src/modules/lru-cache.module';
+import { LRUCache } from 'lru-cache';
+import { ICacheType } from 'src/types/cache.type';
+import { REDIS_CACHE } from 'src/modules/redis-cache.module';
+import Redis from 'ioredis';
+import { assertThatBodyParserHasBeenUsedForExpressLikeRequest } from 'supertokens-node/lib/build/framework/utils';
 
 @Injectable()
 export class ApiKeyService {
-  constructor(@Inject(KYSELY_DB) private readonly db: Kysely<Database>) {}
+  constructor(
+    @Inject(KYSELY_DB) private readonly db: Kysely<Database>,
+    @Inject(LRU_CACHE) private readonly lruCache: LRUCache<string, ICacheType>,
+    @Inject(REDIS_CACHE) private readonly redis: Redis,
+  ) {}
 
   private generateApiKey(): { plainTextKey: string; keyId: string } {
     const keyId = crypto.randomUUID().replace(/-/g, '');
@@ -20,6 +35,7 @@ export class ApiKeyService {
     const [result] = await this.db
       .selectFrom('api_keys')
       .where('user_id', '=', userId)
+      .where('revoked_at', 'is', null)
       .select(({ fn }) => [fn.count<number>('id').as('api_count')])
       .execute();
 
@@ -53,6 +69,7 @@ export class ApiKeyService {
     const apiKeys = await this.db
       .selectFrom('api_keys')
       .where('user_id', '=', userId)
+      .where('revoked_at', 'is', null)
       .select([
         'id',
         'api_name',
@@ -63,5 +80,30 @@ export class ApiKeyService {
       ])
       .execute();
     return { apiKeys };
+  }
+
+  async deleteApiKey(userId: string, apiKeyId: string) {
+    const record = await this.db
+      .selectFrom('api_keys')
+      .select(['revoked_at'])
+      .where('user_id', '=', userId)
+      .where('id', '=', apiKeyId)
+      .executeTakeFirstOrThrow(
+        () => new BadRequestException('API key not found'),
+      );
+    if (record.revoked_at)
+      throw new BadRequestException('Bad Request. Try a valid API key');
+    const result = await this.db
+      .updateTable('api_keys')
+      .set({ revoked_at: new Date() })
+      .where('user_id', '=', userId)
+      .where('id', '=', apiKeyId)
+      .executeTakeFirst();
+    if (result.numUpdatedRows !== BigInt(1)) {
+      throw new InternalServerErrorException(
+        'Unable to delete API key. Try again later',
+      );
+    }
+    // invalidate the api key from lru and redis
   }
 }
