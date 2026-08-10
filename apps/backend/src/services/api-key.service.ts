@@ -114,12 +114,22 @@ export class ApiKeyService {
   }
 
   async getApiKeyLastUsedAtTimestamp(userId: string, apiKeyId: string) {
+    const ownership = await this.db
+      .selectFrom('api_keys')
+      .select(['id'])
+      .where('id', '=', apiKeyId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    if (!ownership) return null;
+
+    // Access redis after ownership has been confirmed
     const value = await this.redis.hget(LAST_USED_HASH_KEY, apiKeyId);
     if (value) return new Date(Number(value));
+
+    // redis miss - hit db
     const result = await this.db
       .selectFrom('api_keys')
       .select(['last_used_at'])
-      .where('user_id', '=', userId)
       .where('id', '=', apiKeyId)
       .executeTakeFirst();
     return result?.last_used_at ?? null;
