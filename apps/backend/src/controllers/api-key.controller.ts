@@ -36,10 +36,13 @@ export class ApiKeyController {
 
   @Get(':id')
   async getApiKeyLastUsedAtTimestamp(
-    @Session() _session: SessionContainer,
+    @Session() session: SessionContainer,
     @Param('id') id: string,
   ) {
-    return this.apiKeyService.getApiKeyLastUsedAtTimestamp(id);
+    return this.apiKeyService.getApiKeyLastUsedAtTimestamp(
+      session.getUserId(),
+      id,
+    );
   }
 
   @Delete(':id')

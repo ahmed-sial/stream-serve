@@ -113,12 +113,13 @@ export class ApiKeyService {
     await this.redis.del(redisKey);
   }
 
-  async getApiKeyLastUsedAtTimestamp(apiKeyId: string) {
+  async getApiKeyLastUsedAtTimestamp(userId: string, apiKeyId: string) {
     const value = await this.redis.hget(LAST_USED_HASH_KEY, apiKeyId);
     if (value) return new Date(Number(value));
     const result = await this.db
       .selectFrom('api_keys')
       .select(['last_used_at'])
+      .where('user_id', '=', userId)
       .where('id', '=', apiKeyId)
       .executeTakeFirst();
     return result?.last_used_at ?? null;

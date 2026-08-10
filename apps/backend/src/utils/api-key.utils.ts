@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const REDIS_KEY_SECRET = process.env.REDIS_KEY_SECRET || '';
 

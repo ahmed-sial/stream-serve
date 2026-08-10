@@ -8,12 +8,9 @@ import { RedisCacheModule } from './modules/redis-cache.module';
 import { SuperTokensModule } from 'supertokens-nestjs';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Session from 'supertokens-node/recipe/session';
-import dotenv from 'dotenv';
 import { ApiKeyModule } from './modules/api-key.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiKeyUsageCronJob } from './schedular/api-key-last-used-at.cron';
-
-dotenv.config;
 
 @Module({
   imports: [
