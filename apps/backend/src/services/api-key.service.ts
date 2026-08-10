@@ -123,8 +123,9 @@ export class ApiKeyService {
     if (!ownership) return null;
 
     // Access redis after ownership has been confirmed
-    const value = await this.redis.hget(LAST_USED_HASH_KEY, apiKeyId);
-    if (value) return new Date(Number(value));
+    const normalizedKey = apiKeyId.replace(/-/g, '');
+    const value = await this.redis.hget(LAST_USED_HASH_KEY, normalizedKey);
+    if (value) return { lastUsedAt: new Date(Number(value)) };
 
     // redis miss - hit db
     const result = await this.db
@@ -132,6 +133,6 @@ export class ApiKeyService {
       .select(['last_used_at'])
       .where('id', '=', apiKeyId)
       .executeTakeFirst();
-    return result?.last_used_at ?? null;
+    return { lastUsedAt: result?.last_used_at ?? null };
   }
 }

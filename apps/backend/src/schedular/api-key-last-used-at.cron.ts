@@ -54,7 +54,8 @@ export class ApiKeyUsageCronJob {
 
       const values = sql.join(
         entries.map(
-          ({ apiKeyId, lastUsedAt }) => sql`(${apiKeyId}, ${lastUsedAt})`,
+          ({ apiKeyId, lastUsedAt }) =>
+            sql`(${apiKeyId}::uuid, ${lastUsedAt}::timestamptz)`,
         ),
         sql`,`,
       );
