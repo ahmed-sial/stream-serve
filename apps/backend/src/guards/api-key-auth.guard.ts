@@ -88,11 +88,15 @@ export class ApiKeyAuthGuard implements CanActivate {
         }
         const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${apiKeyId}`;
         const redisCacheValue = await this.redis.hgetall(redisKey);
+        if (redisCacheValue?.invalid === '1')
+          throw new UnauthorizedException('Unauthorized');
+
         if (
-          redisCacheValue?.invalid === '1' ||
+          redisCacheValue?.digestedApiKey &&
           redisCacheValue?.digestedApiKey !== digestedApiKey
         )
           throw new UnauthorizedException('Unauthorized');
+
         if (redisCacheValue?.userId) {
           this.lruCache.set(lruKey, {
             userId: redisCacheValue.userId,
