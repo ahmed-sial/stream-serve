@@ -29,7 +29,7 @@ import { ApiKeyUsageCronJob } from './schedular/api-key-last-used-at.cron';
           appName: 'StreamServe',
           apiDomain: configService.getOrThrow('API_DOMAIN'),
           websiteDomain: configService.getOrThrow('WEBSITE_DOMAIN'),
-          apiBasePath: '/auth',
+          apiBasePath: '/api/auth',
           websiteBasePath: '/auth',
         },
         recipeList: [EmailPassword.init(), Session.init()],
