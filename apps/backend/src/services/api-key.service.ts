@@ -14,7 +14,10 @@ import { LRUCache } from 'lru-cache';
 import { ICacheType } from 'src/types/cache.type';
 import { REDIS_CACHE } from 'src/modules/redis-cache.module';
 import Redis from 'ioredis';
-import { CACHE_KEY_VERSION } from 'src/guards/api-key-auth.guard';
+import {
+  CACHE_KEY_VERSION,
+  LAST_USED_HASH_KEY,
+} from 'src/guards/api-key-auth.guard';
 
 @Injectable()
 export class ApiKeyService {
@@ -108,5 +111,16 @@ export class ApiKeyService {
     this.lruCache.delete(lruKey);
     const redisKey = `srs:api_key:${CACHE_KEY_VERSION}:${apiKeyId}`;
     await this.redis.del(redisKey);
+  }
+
+  async getApiKeyLastUsedAtTimestamp(apiKeyId: string) {
+    const value = await this.redis.hget(LAST_USED_HASH_KEY, apiKeyId);
+    if (value) return new Date(Number(value));
+    const result = await this.db
+      .selectFrom('api_keys')
+      .select(['last_used_at'])
+      .where('id', '=', apiKeyId)
+      .executeTakeFirst();
+    return result?.last_used_at ?? null;
   }
 }
