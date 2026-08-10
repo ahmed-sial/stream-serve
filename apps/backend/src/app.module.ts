@@ -10,6 +10,8 @@ import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Session from 'supertokens-node/recipe/session';
 import dotenv from 'dotenv';
 import { ApiKeyModule } from './modules/api-key.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ApiKeyUsageCronJob } from './schedular/api-key-last-used-at.cron';
 
 dotenv.config;
 
@@ -37,8 +39,9 @@ dotenv.config;
       }),
     }),
     ApiKeyModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ApiKeyUsageCronJob],
 })
 export class AppModule {}
