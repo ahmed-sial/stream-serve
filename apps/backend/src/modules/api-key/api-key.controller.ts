@@ -8,8 +8,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CreateApiKeyDto } from 'src/dtos/create-api-key.dto';
-import { ApiKeyService } from 'src/services/api-key.service';
+import { CreateApiKeyDto } from 'src/modules/api-key/dtos/create-api-key.dto';
+import { ApiKeyService } from 'src/modules/api-key/api-key.service';
 import { Session, SuperTokensAuthGuard } from 'supertokens-nestjs';
 import type { SessionContainer } from 'supertokens-node/recipe/session';
 

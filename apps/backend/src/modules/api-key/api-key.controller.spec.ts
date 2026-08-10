@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ApiKeyController } from './api-key.controller';
-import { ApiKeyService } from 'src/services/api-key.service';
+import { ApiKeyService } from 'src/modules/api-key/api-key.service';
 import type { SessionContainer } from 'supertokens-node/recipe/session';
+import { ApiKeyController } from './api-key.controller';
 
 // A controller unit test calls the controller's methods directly as plain
 // functions - it does NOT go through HTTP, so guards (like

@@ -14,12 +14,12 @@ import {
 } from 'src/utils/api-key.utils';
 import * as argon2 from 'argon2';
 import { LRUCache } from 'lru-cache';
-import { REDIS_CACHE } from 'src/modules/redis-cache.module';
+import { REDIS_CACHE } from 'src/modules/infrastructure/redis-cache.module';
 import Redis from 'ioredis';
-import { KYSELY_DB } from 'src/modules/database.module';
+import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import { Database } from 'src/database/database.interface';
 import { Kysely } from 'kysely';
-import { LRU_CACHE } from 'src/modules/lru-cache.module';
+import { LRU_CACHE } from 'src/modules/infrastructure/lru-cache.module';
 import { ICacheType } from 'src/types/cache.type';
 import type { Request } from 'express';
 

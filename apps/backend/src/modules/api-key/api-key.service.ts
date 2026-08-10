@@ -7,12 +7,12 @@ import {
 import { randomBytes } from 'crypto';
 import { Kysely } from 'kysely';
 import { Database } from 'src/database/database.interface';
-import { KYSELY_DB } from 'src/modules/database.module';
+import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import * as argon2 from 'argon2';
-import { LRU_CACHE } from 'src/modules/lru-cache.module';
+import { LRU_CACHE } from 'src/modules/infrastructure/lru-cache.module';
 import { LRUCache } from 'lru-cache';
 import { ICacheType } from 'src/types/cache.type';
-import { REDIS_CACHE } from 'src/modules/redis-cache.module';
+import { REDIS_CACHE } from 'src/modules/infrastructure/redis-cache.module';
 import Redis from 'ioredis';
 import {
   CACHE_KEY_VERSION,
