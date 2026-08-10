@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });
 
-const REDIS_KEY_SECRET = process.env.REDIS_KEY_SECRET || '';
-
 export const isApiKeySyntaxValid = (apiKey: string): boolean => {
   if (!apiKey || !apiKey.startsWith('srs_')) return false;
   const apiParts = apiKey.split('_');
@@ -27,6 +25,8 @@ export const extractApiKeyId = (apiKey: string): string => {
 };
 
 export const digestApiKey = (apiKey: string): string => {
+  const REDIS_KEY_SECRET = process.env.REDIS_KEY_SECRET;
+  if (!REDIS_KEY_SECRET) throw new Error('REDIS_KEY_SECRET is required');
   return crypto
     .createHmac('sha256', REDIS_KEY_SECRET)
     .update(apiKey)
