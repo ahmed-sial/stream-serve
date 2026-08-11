@@ -53,10 +53,7 @@ export class ApiKeyAuthGuard implements CanActivate {
       'NX',
     );
     if (!isOk) return;
-    await this.redis.hset(LAST_USED_HASH_KEY, {
-      apiKeyId,
-      lastUsedAt: Date.now().toString(),
-    });
+    await this.redis.hset(LAST_USED_HASH_KEY, apiKeyId, Date.now().toString());
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -143,7 +140,9 @@ export class ApiKeyAuthGuard implements CanActivate {
         void this.trackApiKeyLastUsedAt(apiKeyId);
         return true;
       } catch (err) {
-        this.logger.error(`Authorization error: ${err}`);
+        this.logger.error(
+          `Authorization error: ${err instanceof Error ? err.message : String(err)}`,
+        );
         throw new UnauthorizedException('Unauthorized');
       }
     }
