@@ -4,7 +4,7 @@ import { FileMigrationProvider, Migrator } from 'kysely/migration';
 import { createDatabase } from './database.factory';
 import dotenv from 'dotenv';
 
-dotenv.config({ quiet: true });
+dotenv.config({ quiet: true, path: path.resolve(process.cwd(), '../../.env') });
 
 async function migrateToLatest() {
   const connectionString = process.env.DB_URL;
@@ -16,7 +16,7 @@ async function migrateToLatest() {
     provider: new FileMigrationProvider({
       fs,
       path,
-      migrationFolder: path.join(process.cwd(), 'src/database/migrations'),
+      migrationFolder: path.join(process.cwd(), '/migrations'),
     }),
   });
 
