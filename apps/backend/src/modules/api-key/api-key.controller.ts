@@ -37,7 +37,7 @@ export class ApiKeyController {
   @Get(':id')
   async getApiKeyLastUsedAtTimestamp(
     @Session() session: SessionContainer,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
     return this.apiKeyService.getApiKeyLastUsedAtTimestamp(
       session.getUserId(),

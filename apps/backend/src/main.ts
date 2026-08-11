@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import supertokens from 'supertokens-node';
 import { SuperTokensExceptionFilter } from 'supertokens-nestjs';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ApiResponseTransformerInterceptor } from './interceptors/api-response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,8 @@ async function bootstrap() {
     allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
     credentials: true,
   });
+
+  app.useGlobalInterceptors(new ApiResponseTransformerInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
