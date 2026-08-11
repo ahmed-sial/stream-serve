@@ -7,11 +7,8 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().defaultTo(sql`gen_random_uuid()`),
     )
     .addColumn('user_id', 'uuid', (col) => col.notNull())
-    .addColumn('name', 'text', (col) => col.notNull())
-    .addColumn('description', 'text')
-    .addColumn('playlist_limit', 'integer', (col) =>
-      col.defaultTo(10).notNull(),
-    )
+    .addColumn('name', 'varchar(32)', (col) => col.notNull())
+    .addColumn('description', 'varchar(256)')
     .addColumn('total_videos', 'integer', (col) => col.defaultTo(0))
     .addColumn('created_at', 'timestamptz', (col) =>
       col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
