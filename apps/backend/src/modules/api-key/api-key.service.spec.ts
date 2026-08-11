@@ -372,7 +372,7 @@ describe('ApiKeyService', () => {
         apiKeyId,
       );
 
-      expect(result).toEqual(new Date(millis));
+      expect(result).toEqual({ lastUsedAt: new Date(millis) });
       // Only the ownership-check query ran - no second DB round-trip needed
       // once redis has the value.
       expect(db.executeTakeFirst).toHaveBeenCalledTimes(1);
@@ -390,7 +390,7 @@ describe('ApiKeyService', () => {
         apiKeyId,
       );
 
-      expect(result).toEqual(lastUsedAt);
+      expect(result).toEqual({ lastUsedAt });
       expect(db.executeTakeFirst).toHaveBeenCalledTimes(2);
     });
 
@@ -405,7 +405,7 @@ describe('ApiKeyService', () => {
         apiKeyId,
       );
 
-      expect(result).toBeNull();
+      expect(result).toEqual({ lastUsedAt: null });
     });
   });
 });
