@@ -29,7 +29,6 @@ export const REDIS_TTL = 10 * 60;
 
 const LAST_USED_DEBOUNCE_SEC = 60;
 export const LAST_USED_HASH_KEY = `srs:api_key:last_used:${CACHE_KEY_VERSION}`;
-
 @Injectable()
 export class ApiKeyAuthGuard implements CanActivate {
   private readonly logger = new Logger(ApiKeyAuthGuard.name, {
@@ -75,7 +74,8 @@ export class ApiKeyAuthGuard implements CanActivate {
           lruCacheValue.expiresAt > now &&
           lruCacheValue.digestedApiKey === digestedApiKey
         ) {
-          request.apiKey = { userId: lruCacheValue.userId, apiKeyId };
+          request.apiKey = { apiKeyId };
+          request.userId = lruCacheValue.userId;
           // await keyword is not used here,
           // because it is a guard not an API endpoint, so we should
           // never wait for API key lastUsedAt property to be updated first
@@ -103,7 +103,8 @@ export class ApiKeyAuthGuard implements CanActivate {
             expiresAt: Date.now() + LRU_TTL,
             digestedApiKey,
           });
-          request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
+          request.apiKey = { apiKeyId };
+          request.userId = redisCacheValue.userId;
           void this.trackApiKeyLastUsedAt(apiKeyId);
           return true;
         }
@@ -137,7 +138,8 @@ export class ApiKeyAuthGuard implements CanActivate {
           expiresAt: Date.now() + LRU_TTL,
           digestedApiKey,
         });
-        request.apiKey = { userId: redisCacheValue.userId, apiKeyId };
+        request.apiKey = { apiKeyId };
+        request.userId = redisCacheValue.userId;
         void this.trackApiKeyLastUsedAt(apiKeyId);
         return true;
       } catch (err) {
