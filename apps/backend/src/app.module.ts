@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DatabaseModule } from './modules/infrastructure/database.module';
 import { LRUCacheModule } from './modules/infrastructure/lru-cache.module';
@@ -11,6 +9,7 @@ import Session from 'supertokens-node/recipe/session';
 import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiKeyUsageCronJob } from './schedular/api-key-last-used-at.cron';
+import { PlaylistModule } from './modules/playlist/playlist.module';
 
 @Module({
   imports: [
@@ -36,9 +35,9 @@ import { ApiKeyUsageCronJob } from './schedular/api-key-last-used-at.cron';
       }),
     }),
     ApiKeyModule,
+    PlaylistModule,
     ScheduleModule.forRoot(),
   ],
-  controllers: [AppController],
-  providers: [AppService, ApiKeyUsageCronJob],
+  providers: [ApiKeyUsageCronJob],
 })
 export class AppModule {}

@@ -4,11 +4,18 @@ import { FileMigrationProvider, Migrator } from 'kysely/migration';
 import { createDatabase } from './database.factory';
 import dotenv from 'dotenv';
 
-dotenv.config({ quiet: true });
+dotenv.config({
+  quiet: true,
+  path: path.resolve(__dirname, '../../.env'),
+});
 
 async function migrateToLatest() {
   const connectionString = process.env.DB_URL;
-  if (!connectionString) throw new Error('DB_URL is required');
+
+  if (!connectionString) {
+    throw new Error('DB_URL is required');
+  }
+
   const db = await createDatabase(connectionString);
 
   const migrator = new Migrator({
@@ -16,7 +23,7 @@ async function migrateToLatest() {
     provider: new FileMigrationProvider({
       fs,
       path,
-      migrationFolder: path.join(process.cwd(), 'src/database/migrations'),
+      migrationFolder: path.resolve(__dirname, './migrations'),
     }),
   });
 

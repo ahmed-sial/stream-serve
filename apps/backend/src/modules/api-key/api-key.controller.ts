@@ -6,50 +6,41 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import { CreateApiKeyDto } from 'src/modules/api-key/dtos/create-api-key.dto';
 import { ApiKeyService } from 'src/modules/api-key/api-key.service';
-import { Session, SuperTokensAuthGuard } from 'supertokens-nestjs';
-import type { SessionContainer } from 'supertokens-node/recipe/session';
+import { UserId } from 'src/decorators/global/user-id.decorator';
 
 @Controller('apikeys')
-@UseGuards(SuperTokensAuthGuard)
 export class ApiKeyController {
   constructor(private readonly apiKeyService: ApiKeyService) {}
 
   @Post('/create')
   async createApiKey(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Body('apiKeyProps') apiKeyProps: CreateApiKeyDto,
   ) {
-    return this.apiKeyService.createApiKey(
-      session.getUserId(),
-      apiKeyProps.name,
-    );
+    return this.apiKeyService.createApiKey(userId, apiKeyProps.name);
   }
 
   @Get()
-  async getAllApiKeys(@Session() session: SessionContainer) {
-    return this.apiKeyService.getAllApiKeys(session.getUserId());
+  async getAllApiKeys(@UserId() userId: string) {
+    return this.apiKeyService.getAllApiKeys(userId);
   }
 
   @Get(':id')
   async getApiKeyLastUsedAtTimestamp(
-    @Session() session: SessionContainer,
-    @Param('id') id: string,
+    @UserId() userId: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
-    return this.apiKeyService.getApiKeyLastUsedAtTimestamp(
-      session.getUserId(),
-      id,
-    );
+    return this.apiKeyService.getApiKeyLastUsedAtTimestamp(userId, id);
   }
 
   @Delete(':id')
   async deleteApiKey(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Param('id', new ParseUUIDPipe({ version: '4' })) apiKeyId: string,
   ) {
-    return this.apiKeyService.deleteApiKey(session.getUserId(), apiKeyId);
+    return this.apiKeyService.deleteApiKey(userId, apiKeyId);
   }
 }
