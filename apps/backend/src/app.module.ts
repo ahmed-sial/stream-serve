@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DatabaseModule } from './modules/infrastructure/database.module';
 import { LRUCacheModule } from './modules/infrastructure/lru-cache.module';
@@ -40,7 +38,6 @@ import { PlaylistModule } from './modules/playlist/playlist.module';
     PlaylistModule,
     ScheduleModule.forRoot(),
   ],
-  controllers: [AppController],
-  providers: [AppService, ApiKeyUsageCronJob],
+  providers: [ApiKeyUsageCronJob],
 })
 export class AppModule {}
