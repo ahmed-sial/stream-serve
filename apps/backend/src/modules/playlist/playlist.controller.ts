@@ -10,55 +10,51 @@ import {
   Delete,
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
-import { Session, SuperTokensAuthGuard } from 'supertokens-nestjs';
+import { Session } from 'supertokens-nestjs';
 import type { SessionContainer } from 'supertokens-node/recipe/session';
 import { CreatePlaylistDto } from './dtos/create-playlist.dto';
 import { UpdatePlaylistDto } from './dtos/update-playlist.dto';
+import { UserId } from 'src/decorators/global/user-id.decorator';
 
 @Controller('playlists')
-@UseGuards(SuperTokensAuthGuard)
 export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) {}
 
   @Post()
   async createPlaylist(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Body() dto: CreatePlaylistDto,
   ) {
-    return this.playlistService.createPlaylist(session.getUserId(), dto);
+    return this.playlistService.createPlaylist(userId, dto);
   }
 
   @Get()
-  async getAllPlaylists(@Session() session: SessionContainer) {
-    return this.playlistService.getAllPlaylists(session.getUserId());
+  async getAllPlaylists(@UserId() userId: string) {
+    return this.playlistService.getAllPlaylists(userId);
   }
 
   @Get(':id')
   async getOnePlaylist(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Param('id', new ParseUUIDPipe({ version: '4' })) playlistId: string,
   ) {
-    return this.playlistService.getOnePlaylist(session.getUserId(), playlistId);
+    return this.playlistService.getOnePlaylist(userId, playlistId);
   }
 
-  @Patch()
+  @Patch(':id')
   async updatePlaylist(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Param('id', new ParseUUIDPipe({ version: '4' })) playlistId: string,
     @Body() dto: UpdatePlaylistDto,
   ) {
-    return this.playlistService.updatePlaylist(
-      session.getUserId(),
-      playlistId,
-      dto,
-    );
+    return this.playlistService.updatePlaylist(userId, playlistId, dto);
   }
 
-  @Delete()
+  @Delete(':id')
   async deletePlaylist(
-    @Session() session: SessionContainer,
+    @UserId() userId: string,
     @Param('id', new ParseUUIDPipe({ version: '4' })) playlistId: string,
   ) {
-    return this.playlistService.deletePlaylist(session.getUserId(), playlistId);
+    return this.playlistService.deletePlaylist(userId, playlistId);
   }
 }
