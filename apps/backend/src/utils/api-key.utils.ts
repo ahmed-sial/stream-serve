@@ -5,18 +5,22 @@ dotenv.config({ quiet: true });
 
 export const isApiKeySyntaxValid = (apiKey: string): boolean => {
   if (!apiKey || !apiKey.startsWith('srs_')) return false;
-  const apiParts = apiKey.split('_');
-  if (
-    apiParts.length != 3 ||
-    apiParts[0] !== 'srs' ||
-    apiParts[1].length !== 32 ||
-    apiParts[2].length !== 43 ||
-    !/^[a-f0-9]{32}$/i.test(apiParts[1]) ||
-    !/^[a-zA-Z0-9_-]{43}$/i.test(apiParts[2])
-  ) {
-    return false;
-  }
-  return true;
+
+  const firstUnderscore = apiKey.indexOf('_');
+  const secondUnderscore = apiKey.indexOf('_', firstUnderscore + 1);
+  if (secondUnderscore === -1) return false;
+
+  const prefix = apiKey.slice(0, firstUnderscore);
+  const keyId = apiKey.slice(firstUnderscore + 1, secondUnderscore);
+  const secret = apiKey.slice(secondUnderscore + 1);
+
+  return (
+    prefix === 'srs' &&
+    keyId.length === 32 &&
+    secret.length === 43 &&
+    /^[a-f0-9]{32}$/i.test(keyId) &&
+    /^[a-zA-Z0-9_-]{43}$/.test(secret)
+  );
 };
 
 export const extractApiKeyId = (apiKey: string): string => {
