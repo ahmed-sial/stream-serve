@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import Redis from 'ioredis';
 import { Kysely, sql } from 'kysely';
 import { Database } from 'src/database/database.interface';
-import { LAST_USED_HASH_KEY } from 'src/guards/api-key-auth.guard';
+import { LAST_USED_HASH_KEY } from 'src/guards/api-key-auth/api-key-auth.guard';
 import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import { REDIS_CACHE } from 'src/modules/infrastructure/redis-cache.module';
 
