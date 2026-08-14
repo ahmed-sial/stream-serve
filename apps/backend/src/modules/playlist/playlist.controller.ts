@@ -1,21 +1,23 @@
 import {
   Body,
   Controller,
-  UseGuards,
   Post,
   Get,
   Param,
   Patch,
   ParseUUIDPipe,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { PlaylistService } from './playlist.service';
-import { Session } from 'supertokens-nestjs';
-import type { SessionContainer } from 'supertokens-node/recipe/session';
 import { CreatePlaylistDto } from './dtos/create-playlist.dto';
 import { UpdatePlaylistDto } from './dtos/update-playlist.dto';
 import { UserId } from 'src/decorators/global/user-id.decorator';
+import { OrGuard } from 'src/guards/or.guard';
+import { CustomSuperTokensAuthGuard } from 'src/guards/custom-super-token-auth/custom-super-token-auth-with-session.guard';
+import { ApiKeyAuthGuard } from 'src/guards/api-key-auth/api-key-auth.guard';
 
+@UseGuards(OrGuard(CustomSuperTokensAuthGuard, ApiKeyAuthGuard))
 @Controller('playlists')
 export class PlaylistController {
   constructor(private readonly playlistService: PlaylistService) {}

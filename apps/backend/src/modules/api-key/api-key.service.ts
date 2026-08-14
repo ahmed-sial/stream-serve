@@ -17,7 +17,7 @@ import Redis from 'ioredis';
 import {
   CACHE_KEY_VERSION,
   LAST_USED_HASH_KEY,
-} from 'src/guards/api-key-auth.guard';
+} from 'src/guards/api-key-auth/api-key-auth.guard';
 
 @Injectable()
 export class ApiKeyService {

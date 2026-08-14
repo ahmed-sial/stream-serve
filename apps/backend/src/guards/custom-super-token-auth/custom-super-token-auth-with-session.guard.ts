@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from 'src/decorators/global/public.decorator';
 import { SuperTokensAuthGuard } from 'supertokens-nestjs';
 import { SessionRequest } from 'supertokens-node/framework/express';
-import { ApiKeyAuthGuard } from './api-key-auth.guard';
+import { ApiKeyAuthGuard } from '../api-key-auth/api-key-auth.guard';
 
 @Injectable()
 export class CustomSuperTokensAuthGuard extends SuperTokensAuthGuard {

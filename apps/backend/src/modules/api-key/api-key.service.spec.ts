@@ -7,7 +7,7 @@ import * as argon2 from 'argon2';
 import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import { LRU_CACHE } from 'src/modules/infrastructure/lru-cache.module';
 import { REDIS_CACHE } from 'src/modules/infrastructure/redis-cache.module';
-import { CACHE_KEY_VERSION } from 'src/guards/api-key-auth.guard';
+import { CACHE_KEY_VERSION } from 'src/guards/api-key-auth/api-key-auth.guard';
 import { ApiKeyService } from './api-key.service';
 
 // argon2 does real, slow, native hashing. We never want a unit test to
