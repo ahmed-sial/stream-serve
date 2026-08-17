@@ -20,15 +20,16 @@ import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import { Database } from 'src/database/database.interface';
 import { Kysely } from 'kysely';
 import { LRU_CACHE } from 'src/modules/infrastructure/lru-cache.module';
-import { ICacheType } from 'src/types/cache.type';
+import { ICacheType } from 'src/types/api-key-cache.type';
 import type { Request } from 'express';
+import {
+  CACHE_KEY_VERSION,
+  API_KEY_LAST_USED_DEBOUNCE_SEC,
+  API_KEY_LAST_USED_HASH_KEY,
+  API_KEY_LRU_TTL,
+  API_KEY_REDIS_TTL,
+} from 'src/configurations';
 
-export const CACHE_KEY_VERSION = 'v1';
-export const LRU_TTL = 5 * 60 * 1000;
-export const REDIS_TTL = 10 * 60;
-
-const LAST_USED_DEBOUNCE_SEC = 60;
-export const LAST_USED_HASH_KEY = `srs:api_key:last_used:${CACHE_KEY_VERSION}`;
 @Injectable()
 export class ApiKeyAuthGuard implements CanActivate {
   private readonly logger = new Logger(ApiKeyAuthGuard.name, {
@@ -49,11 +50,15 @@ export class ApiKeyAuthGuard implements CanActivate {
       lockKey,
       '1',
       'EX',
-      LAST_USED_DEBOUNCE_SEC,
+      API_KEY_LAST_USED_DEBOUNCE_SEC,
       'NX',
     );
     if (!isOk) return;
-    await this.redis.hset(LAST_USED_HASH_KEY, apiKeyId, Date.now().toString());
+    await this.redis.hset(
+      API_KEY_LAST_USED_HASH_KEY,
+      apiKeyId,
+      Date.now().toString(),
+    );
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -97,7 +102,7 @@ export class ApiKeyAuthGuard implements CanActivate {
         if (redisCacheValue?.userId) {
           this.lruCache.set(lruKey, {
             userId: redisCacheValue.userId,
-            expiresAt: Date.now() + LRU_TTL,
+            expiresAt: Date.now() + API_KEY_LRU_TTL,
             digestedApiKey,
           });
           request.apiKey = { apiKeyId };
@@ -122,17 +127,17 @@ export class ApiKeyAuthGuard implements CanActivate {
           await this.redis.hset(redisKey, {
             invalid: '1',
           });
-          await this.redis.expire(redisKey, REDIS_TTL);
+          await this.redis.expire(redisKey, API_KEY_REDIS_TTL);
           throw new UnauthorizedException('Unauthorized');
         }
         await this.redis.hset(redisKey, {
           userId: apiKeyRecord.user_id,
           digestedApiKey,
         });
-        await this.redis.expire(redisKey, REDIS_TTL);
+        await this.redis.expire(redisKey, API_KEY_REDIS_TTL);
         this.lruCache.set(lruKey, {
           userId: apiKeyRecord.user_id,
-          expiresAt: Date.now() + LRU_TTL,
+          expiresAt: Date.now() + API_KEY_LRU_TTL,
           digestedApiKey,
         });
         request.apiKey = { apiKeyId };

@@ -11,7 +11,7 @@ import { KYSELY_DB } from 'src/modules/infrastructure/database.module';
 import * as argon2 from 'argon2';
 import { LRU_CACHE } from 'src/modules/infrastructure/lru-cache.module';
 import { LRUCache } from 'lru-cache';
-import { ICacheType } from 'src/types/cache.type';
+import { ICacheType } from 'src/types/api-key-cache.type';
 import { REDIS_CACHE } from 'src/modules/infrastructure/redis-cache.module';
 import Redis from 'ioredis';
 import {

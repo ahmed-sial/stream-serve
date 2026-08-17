@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { LRUCache } from 'lru-cache';
-import { ICacheType } from 'src/types/cache.type';
+import { ICacheType } from 'src/types/api-key-cache.type';
 
 export const LRU_CACHE = 'LRU_CACHE';
 
